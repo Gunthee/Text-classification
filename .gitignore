@@ -2,5 +2,6 @@ venv/
 .venv/
 *.csv
 _pycache__/
+*.pyc
 *.pkl
 
