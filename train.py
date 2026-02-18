@@ -83,10 +83,14 @@ class Classifier:
         
         return self.model.predict([text])[0]
     
+    def train_model(self):
+        self.read_csv()
+        self.train()
+        return 
 
+    
 classifier = Classifier()
-classifier.read_csv()
-classifier.train()
+classifier.train_model()
 
 text = "วิชานี้จะสอนเกี่ยวกับการวิเคราะห์ข้อมูลเบื้องต้นและการใช้เครื่องมือในการวิเคราะห์ข้อมูล เช่น Excel, Power BI และ Python เพื่อช่วยในการตัดสินใจทางธุรกิจ"
 
