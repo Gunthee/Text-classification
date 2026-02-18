@@ -1,102 +1,105 @@
-import numpy as np
-import pandas as pd 
-import re 
+import re
+import joblib
+import pandas as pd
 
 from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import LabelEncoder
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics import f1_score, classification_report
-from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
 
 from pythainlp.tokenize import word_tokenize
 from pythainlp.corpus import thai_stopwords
-from pythainlp.util import normalize, remove_dangling, remove_dup_spaces
+from pythainlp.util import normalize, remove_dup_spaces
+
+# ---------------------------
+# 1️⃣ Preprocessing function
+# ---------------------------
+
+from preprocessing import preprocess
 
 
-class Classifier:
-    def __init__(self):
-        self.data = None
-        self.model = None
+# ---------------------------
+# 2️⃣ Load Dataset
+# ---------------------------
 
-    def read_csv(self):
+df = pd.read_csv("thaimooc_courses.csv").dropna()
 
-        data = pd.read_csv('thaimooc_courses.csv')
-        data = data.dropna()
-        self.data = data
-        print("Dataset loaded successfully✅.")
-        return 
-
-    def _preprocess_data(self,text):
-
-        cleaned_text = text.strip()\
-            .replace('\n', ' ')\
-            .replace('\r', ' ')\
-            .replace('\t', ' ')\
-            .replace('  ', ' ')\
-            .replace(':','')\
-            .replace('.','')\
-            .replace('?','')
-        cleaned_text = remove_dup_spaces(cleaned_text)
-        cleaned_text = re.sub(r"\d", '', cleaned_text)
-
-        tokens = word_tokenize(cleaned_text, engine='newmm')
-        tokens = [normalize(i) for i in tokens]
-        tokens = [i for i in tokens if i != '']
-        tokens = [i for i in tokens if i not in thai_stopwords()]
-
-        return tokens
-    
-    def train(self):
-        print("Training the classifier with the dataset...")
-
-        X = self.data['Course Description']
-        y = self.data['Category']
+X = df["Course Description"]
+y = df["Category"]
 
 
-        pipeline = Pipeline([
-        ("tfidf", TfidfVectorizer(
-        min_df=2,               # ignore rare terms
-        sublinear_tf=True,      # log-scale term frequency
-        lowercase=True,
-        analyzer=lambda x: self._preprocess_data(x),
-        decode_error='replace'
-        )),
-        ("clf", LogisticRegression(
-            max_iter=2000,
-            C=1.0,
-            class_weight="balanced",  # handle imbalance
-            n_jobs=-1
-        )
-        )
-        ])
+# ---------------------------
+# 3️⃣ Encode Labels
+# ---------------------------
 
-        pipeline.fit(X,y)
-
-        self.model = pipeline.fit(X,y)
-        print("Training completed✅.")
-        score = pipeline.score(X,y)
-        print(f"Training Score: {score}")
-
-    def predict(self, text):
-        if self.model is None:
-            raise ValueError("Model has not been trained yet. Call train() first.")
-        
-        return self.model.predict([text])[0]
-    
-    def train_model(self):
-        self.read_csv()
-        self.train()
-        return 
-
-    
-classifier = Classifier()
-classifier.train_model()
-
-text = "วิชานี้จะสอนเกี่ยวกับการวิเคราะห์ข้อมูลเบื้องต้นและการใช้เครื่องมือในการวิเคราะห์ข้อมูล เช่น Excel, Power BI และ Python เพื่อช่วยในการตัดสินใจทางธุรกิจ"
-
-predicted_category = classifier.predict(text)
-print(f"Predicted category: {predicted_category}")
+label_encoder = LabelEncoder()
+y_encoded = label_encoder.fit_transform(y)
 
 
+# ---------------------------
+# 4️⃣ Train/Test Split
+# ---------------------------
 
-    
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y_encoded,
+    test_size=0.2,
+    random_state=42,
+    stratify=y_encoded
+)
+
+
+# ---------------------------
+# 5️⃣ Vectorize Text
+# ---------------------------
+
+vectorizer = TfidfVectorizer(
+    analyzer=preprocess,
+    min_df=2,
+    sublinear_tf=True
+)
+
+X_train_tfidf = vectorizer.fit_transform(X_train)
+X_test_tfidf = vectorizer.transform(X_test)
+
+
+# ---------------------------
+# 6️⃣ Train Model
+# ---------------------------
+
+model = LogisticRegression(
+    max_iter=2000,
+    class_weight="balanced",
+    n_jobs=-1
+)
+
+model.fit(X_train_tfidf, y_train)
+
+
+# ---------------------------
+# 7️⃣ Evaluate
+# ---------------------------
+
+y_pred = model.predict(X_test_tfidf)
+
+print("Classification Report:")
+print(classification_report(
+    y_test,
+    y_pred,
+    target_names=label_encoder.classes_
+))
+
+
+# ---------------------------
+# 8️⃣ Save Everything
+# ---------------------------
+
+model_bundle = {
+    "vectorizer": vectorizer,
+    "model": model,
+    "label_encoder": label_encoder
+}
+
+joblib.dump(model_bundle, "thai_mooc_model.joblib")
+
+print("Model saved successfully ✅")
