@@ -15,12 +15,16 @@ from pythainlp.util import normalize, remove_dangling, remove_dup_spaces
 
 class Classifier:
     def __init__(self):
-        self.data = pd.read_csv('thaimooc_courses.csv')
-
+        self.data = None
         self.model = None
 
-        self.X = self.data['Course Description']
-        self.y = self.data['Category']
+    def read_csv(self):
+
+        data = pd.read_csv('thaimooc_courses.csv')
+        data = data.dropna()
+        self.data = data
+        print("Dataset loaded successfully✅.")
+        return 
 
     def _preprocess_data(self,text):
 
@@ -45,6 +49,10 @@ class Classifier:
     def train(self):
         print("Training the classifier with the dataset...")
 
+        X = self.data['Course Description']
+        y = self.data['Category']
+
+
         pipeline = Pipeline([
         ("tfidf", TfidfVectorizer(
         min_df=2,               # ignore rare terms
@@ -62,11 +70,11 @@ class Classifier:
         )
         ])
 
-        pipeline.fit(self.X, self.y)
+        pipeline.fit(X,y)
 
-        self.model = pipeline.fit(self.X, self.y)
+        self.model = pipeline.fit(X,y)
         print("Training completed✅.")
-        score = pipeline.score(self.X, self.y)
+        score = pipeline.score(X,y)
         print(f"Training Score: {score}")
 
     def predict(self, text):
@@ -77,6 +85,7 @@ class Classifier:
     
 
 classifier = Classifier()
+classifier.read_csv()
 classifier.train()
 
 text = "วิชานี้จะสอนเกี่ยวกับการวิเคราะห์ข้อมูลเบื้องต้นและการใช้เครื่องมือในการวิเคราะห์ข้อมูล เช่น Excel, Power BI และ Python เพื่อช่วยในการตัดสินใจทางธุรกิจ"
