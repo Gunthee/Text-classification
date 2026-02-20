@@ -1,6 +1,6 @@
 import pandas as pd
 
-df = pd.read_csv('thaimooc_courses.csv')
+df = pd.read_csv('training_dataset 2.csv')
 
 print(df.head())
 print(df.info())

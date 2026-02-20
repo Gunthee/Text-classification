@@ -1,7 +1,6 @@
 from fastapi import FastAPI
+import joblib
 from pydantic import BaseModel
-
-from predict import predict_text
 
 class Course(BaseModel):
     name: str
@@ -9,9 +8,12 @@ class Course(BaseModel):
 
 app = FastAPI()
 
+model = joblib.load("model/thai_mooc_logreg_grid_2.joblib")
+print("✅ Model loaded successfully")
+
 @app.post("/predict")
 async def predict_course_category(course: Course):
-    predicted_category = predict_text(course.description)
+    predicted_category = model.predict([course.description])[0]
 
     if predicted_category == 'คอมพิวเตอร์และเทคโนโลยี':
         category_id = "1"
