@@ -1,6 +1,6 @@
 import pandas as pd
 
-df = pd.read_csv('training_dataset 2.csv')
+df = pd.read_csv('training_dataset_cleaned_balanced.csv')
 
 print(df.head())
 print(df.info())

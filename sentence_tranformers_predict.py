@@ -1,7 +1,7 @@
 import joblib
 from sentence_transformers import SentenceTransformer
 
-MODEL_PATH = "thai_mooc_sbert_logreg_grid_3.joblib"
+MODEL_PATH = "thai_mooc_sbert_logreg_grid.joblib"
 
 _bundle = joblib.load(MODEL_PATH)
 _embedder = SentenceTransformer(_bundle["model_name"])
